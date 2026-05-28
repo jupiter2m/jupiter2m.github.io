@@ -1,11 +1,553 @@
 <!DOCTYPE html>
-
 <html lang="fr">
-    <head>
-        <meta charset="utf-8">
-        <title>GD Studio</title>
-    </head>
-    <body>
-        <h1>Hello World</h1>
-    </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accès Restreint</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1714;
+      --muted: #6b6560;
+      --faint: #e8e4de;
+      --paper: #f7f4ef;
+      --accent: #8b4513;
+      --accent-light: #c4815a;
+      --error: #9b2020;
+      --success: #2c6e49;
+    }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border: 1px solid var(--faint);
+      padding: 3.5rem 3rem;
+      position: relative;
+    }
+
+    /* Decorative corner lines */
+    .login-card::before,
+    .login-card::after {
+      content: '';
+      position: absolute;
+      width: 32px;
+      height: 32px;
+    }
+    .login-card::before {
+      top: -1px; left: -1px;
+      border-top: 2px solid var(--accent);
+      border-left: 2px solid var(--accent);
+    }
+    .login-card::after {
+      bottom: -1px; right: -1px;
+      border-bottom: 2px solid var(--accent);
+      border-right: 2px solid var(--accent);
+    }
+
+    .lock-icon {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .lock-icon svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--accent);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      text-align: center;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+    }
+    .card-subtitle {
+      font-size: 0.78rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--faint);
+    }
+    .divider span {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field {
+      margin-bottom: 1.5rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--faint);
+      background: var(--paper);
+      padding: 0 3rem 0 1rem;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .input-wrap input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+    .input-wrap input.error-state {
+      border-color: var(--error);
+      background: #fdf5f5;
+    }
+
+    .toggle-btn {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+    }
+    .toggle-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .error-msg {
+      display: none;
+      font-size: 0.75rem;
+      color: var(--error);
+      margin-top: 0.5rem;
+      letter-spacing: 0.03em;
+    }
+    .error-msg.visible {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .submit-btn {
+      width: 100%;
+      height: 48px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .submit-btn:hover { background: var(--accent); }
+    .submit-btn:active { transform: scale(0.99); }
+    .submit-btn.loading { pointer-events: none; }
+
+    .attempts-left {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 1.5rem;
+      letter-spacing: 0.05em;
+      min-height: 1.2em;
+    }
+
+    /* Shake animation on error */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake { animation: shake 0.35s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── LOCKED OUT SCREEN ── */
+    #locked-screen {
+      display: none;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+    #locked-screen.active { display: flex; }
+    .locked-card {
+      text-align: center;
+      max-width: 360px;
+    }
+    .locked-card .big-lock svg {
+      width: 56px;
+      height: 56px;
+      stroke: var(--error);
+      fill: none;
+      stroke-width: 1.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      margin-bottom: 1.5rem;
+    }
+    .locked-card h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 300;
+      margin-bottom: 0.8rem;
+    }
+    .locked-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+    .countdown { font-size: 2.2rem; font-weight: 500; color: var(--accent); margin: 1.5rem 0; font-variant-numeric: tabular-nums; }
+
+    /* ── CONTENT SCREEN ── */
+    #content-screen {
+      display: none;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+    #content-screen.active { display: flex; }
+
+    .site-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 3rem;
+      border-bottom: 1px solid var(--faint);
+      background: #fff;
+    }
+    .site-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+    }
+    .logout-btn {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid var(--faint);
+      padding: 0.5rem 1.2rem;
+      cursor: pointer;
+      color: var(--muted);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .logout-btn:hover { color: var(--ink); border-color: var(--ink); }
+
+    .content-area {
+      flex: 1;
+      max-width: 760px;
+      margin: 4rem auto;
+      padding: 0 2rem;
+      animation: fadeIn 0.5s ease;
+    }
+    .welcome-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    .welcome-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3rem;
+      font-weight: 300;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    .welcome-text {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.9;
+      max-width: 600px;
+      margin-bottom: 3rem;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .info-card {
+      border: 1px solid var(--faint);
+      padding: 1.5rem;
+      background: #fff;
+    }
+    .info-card .card-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 0.6rem;
+    }
+    .info-card .card-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+    }
+    .info-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.4rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── LOGIN ── -->
+  <section id="login-screen">
+    <div class="login-card" id="login-card">
+      <div class="lock-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1 class="card-title">Accès Restreint</h1>
+      <p class="card-subtitle">Zone privée</p>
+
+      <div class="divider"><span>Authentification</span></div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrap">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+          <button class="toggle-btn" id="toggle-vis" aria-label="Afficher le mot de passe" tabindex="-1">
+            <svg id="eye-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="error-msg" id="error-msg">Mot de passe incorrect. Veuillez réessayer.</p>
+      </div>
+
+      <button class="submit-btn" id="submit-btn">Accéder</button>
+      <p class="attempts-left" id="attempts-info"></p>
+    </div>
+  </section>
+
+  <!-- ── LOCKED OUT ── -->
+  <section id="locked-screen">
+    <div class="locked-card">
+      <div class="big-lock">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+      </div>
+      <h2>Accès bloqué</h2>
+      <p>Trop de tentatives incorrectes.<br/>Veuillez patienter avant de réessayer.</p>
+      <div class="countdown" id="countdown">–</div>
+      <p>secondes restantes</p>
+    </div>
+  </section>
+
+  <!-- ── CONTENT ── -->
+  <section id="content-screen">
+    <header class="site-header">
+      <span class="site-logo">Espace Privé</span>
+      <button class="logout-btn" id="logout-btn">Se déconnecter</button>
+    </header>
+    <div class="content-area">
+      <p class="welcome-tag">Bienvenue</p>
+      <h1 class="welcome-title">Vous avez accès<br/>à l'espace privé.</h1>
+      <p class="welcome-text">
+        Ceci est une démonstration d'une page protégée par mot de passe. 
+        Vous pouvez personnaliser ce contenu selon vos besoins — documents confidentiels,
+        tableau de bord privé, espace membre, ou tout autre contenu réservé.
+      </p>
+      <div class="cards-grid">
+        <div class="info-card">
+          <p class="card-label">Statut</p>
+          <p class="card-value">Connecté</p>
+          <p>Session active et sécurisée.</p>
+        </div>
+        <div class="info-card">
+          <p class="card-label">Mot de passe de démo</p>
+          <p class="card-value">secret123</p>
+          <p>Modifiez-le dans le code JS.</p>
+        </div>
+        <div class="info-card">
+          <p class="card-label">Protection</p>
+          <p class="card-value">3 essais</p>
+          <p>Blocage de 30 s après échecs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    /* ── CONFIG ── */
+    const CORRECT_PASSWORD = 'secret123';
+    const MAX_ATTEMPTS     = 3;
+    const LOCKOUT_SECS     = 30;
+
+    /* ── STATE ── */
+    let attempts = 0;
+    let locked   = false;
+    let lockTimer = null;
+
+    /* ── ELEMENTS ── */
+    const loginScreen   = document.getElementById('login-screen');
+    const lockedScreen  = document.getElementById('locked-screen');
+    const contentScreen = document.getElementById('content-screen');
+    const passwordInput = document.getElementById('password');
+    const submitBtn     = document.getElementById('submit-btn');
+    const errorMsg      = document.getElementById('error-msg');
+    const attemptsInfo  = document.getElementById('attempts-info');
+    const countdownEl   = document.getElementById('countdown');
+    const toggleVis     = document.getElementById('toggle-vis');
+    const eyeIcon       = document.getElementById('eye-icon');
+    const logoutBtn     = document.getElementById('logout-btn');
+    const loginCard     = document.getElementById('login-card');
+
+    /* ── TOGGLE PASSWORD VISIBILITY ── */
+    toggleVis.addEventListener('click', () => {
+      const isText = passwordInput.type === 'text';
+      passwordInput.type = isText ? 'password' : 'text';
+      eyeIcon.innerHTML = isText
+        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    });
+
+    /* ── LOGIN LOGIC ── */
+    function attempt() {
+      if (locked) return;
+      const val = passwordInput.value;
+      if (!val) return;
+
+      if (val === CORRECT_PASSWORD) {
+        loginScreen.style.display = 'none';
+        contentScreen.classList.add('active');
+      } else {
+        attempts++;
+        passwordInput.value = '';
+        passwordInput.classList.add('error-state');
+        errorMsg.classList.add('visible');
+        loginCard.classList.remove('shake');
+        void loginCard.offsetWidth;
+        loginCard.classList.add('shake');
+
+        const remaining = MAX_ATTEMPTS - attempts;
+        if (remaining > 0) {
+          attemptsInfo.textContent = `Il vous reste ${remaining} tentative${remaining > 1 ? 's' : ''}.`;
+        }
+
+        if (attempts >= MAX_ATTEMPTS) {
+          lockout();
+        }
+
+        setTimeout(() => {
+          passwordInput.classList.remove('error-state');
+          errorMsg.classList.remove('visible');
+        }, 2500);
+      }
+    }
+
+    function lockout() {
+      locked = true;
+      loginScreen.style.display = 'none';
+      lockedScreen.classList.add('active');
+
+      let secs = LOCKOUT_SECS;
+      countdownEl.textContent = secs;
+      lockTimer = setInterval(() => {
+        secs--;
+        countdownEl.textContent = secs;
+        if (secs <= 0) {
+          clearInterval(lockTimer);
+          locked = false;
+          attempts = 0;
+          lockedScreen.classList.remove('active');
+          loginScreen.style.display = 'flex';
+          attemptsInfo.textContent = '';
+          passwordInput.value = '';
+        }
+      }, 1000);
+    }
+
+    /* ── LOGOUT ── */
+    logoutBtn.addEventListener('click', () => {
+      contentScreen.classList.remove('active');
+      loginScreen.style.display = 'flex';
+      passwordInput.value = '';
+      attempts = 0;
+      attemptsInfo.textContent = '';
+    });
+
+    submitBtn.addEventListener('click', attempt);
+    passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
+  </script>
+</body>
 </html>
