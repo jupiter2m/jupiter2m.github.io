@@ -1,553 +1,1756 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accès Restreint</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GD Studio — Création Lumière</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Barlow+Condensed:wght@200;300;400;500;600;700;800;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0a0a0a;
+  --white: #f5f3ee;
+  --gray: #1a1a1a;
+  --gray2: #2a2a2a;
+  --muted: #888;
+  --accent: #f5f3ee;
+  --line: rgba(245,243,238,0.12);
+  --gap: 2px;
+}
 
-    :root {
-      --ink: #1a1714;
-      --muted: #6b6560;
-      --faint: #e8e4de;
-      --paper: #f7f4ef;
-      --accent: #8b4513;
-      --accent-light: #c4815a;
-      --error: #9b2020;
-      --success: #2c6e49;
-    }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      font-family: 'Jost', sans-serif;
-      background: var(--paper);
-      color: var(--ink);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+html { scroll-behavior: smooth; }
 
-    /* ── Noise texture overlay ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+}
 
-    /* ── LOGIN SCREEN ── */
-    #login-screen {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      position: relative;
-      z-index: 1;
-    }
+/* ─── PAGES ─── */
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; }
 
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: #fff;
-      border: 1px solid var(--faint);
-      padding: 3.5rem 3rem;
-      position: relative;
-    }
+/* ─── NAV ─── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--black);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 56px;
+}
 
-    /* Decorative corner lines */
-    .login-card::before,
-    .login-card::after {
-      content: '';
-      position: absolute;
-      width: 32px;
-      height: 32px;
-    }
-    .login-card::before {
-      top: -1px; left: -1px;
-      border-top: 2px solid var(--accent);
-      border-left: 2px solid var(--accent);
-    }
-    .login-card::after {
-      bottom: -1px; right: -1px;
-      border-bottom: 2px solid var(--accent);
-      border-right: 2px solid var(--accent);
-    }
+.nav-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
 
-    .lock-icon {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .lock-icon svg {
-      width: 40px;
-      height: 40px;
-      stroke: var(--accent);
-      fill: none;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
+.nav-logo .gd {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: -1px;
+  color: var(--white);
+  line-height: 1;
+}
 
-    .card-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem;
-      font-weight: 300;
-      letter-spacing: 0.02em;
-      text-align: center;
-      color: var(--ink);
-      margin-bottom: 0.4rem;
-    }
-    .card-subtitle {
-      font-size: 0.78rem;
-      font-weight: 300;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-align: center;
-      margin-bottom: 2.5rem;
-    }
+.nav-logo .studio {
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
 
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--faint);
-    }
-    .divider span {
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
 
-    .field {
-      margin-bottom: 1.5rem;
-    }
-    .field label {
-      display: block;
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 0.6rem;
-    }
+.nav-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  text-decoration: none;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 18px 20px;
+  border-left: 1px solid var(--line);
+  transition: color 0.2s;
+  cursor: pointer;
+}
 
-    .input-wrap {
-      position: relative;
-    }
-    .input-wrap input {
-      width: 100%;
-      height: 46px;
-      border: 1px solid var(--faint);
-      background: var(--paper);
-      padding: 0 3rem 0 1rem;
-      font-family: 'Jost', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 400;
-      color: var(--ink);
-      outline: none;
-      transition: border-color 0.2s, background 0.2s;
-      letter-spacing: 0.05em;
-    }
-    .input-wrap input:focus {
-      border-color: var(--accent);
-      background: #fff;
-    }
-    .input-wrap input.error-state {
-      border-color: var(--error);
-      background: #fdf5f5;
-    }
+.nav-links a:last-child { border-right: 1px solid var(--line); }
+.nav-links a:hover, .nav-links a.active { color: var(--white); }
 
-    .toggle-btn {
-      position: absolute;
-      right: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-    }
-    .toggle-btn svg {
-      width: 18px;
-      height: 18px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
+/* ─── HERO ─── */
+.hero {
+  padding-top: 56px;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  position: relative;
+  overflow: hidden;
+}
 
-    .error-msg {
-      display: none;
-      font-size: 0.75rem;
-      color: var(--error);
-      margin-top: 0.5rem;
-      letter-spacing: 0.03em;
-    }
-    .error-msg.visible {
-      display: block;
-      animation: fadeIn 0.2s ease;
-    }
+.hero-left {
+  padding: 80px 60px 80px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
 
-    .submit-btn {
-      width: 100%;
-      height: 48px;
-      background: var(--ink);
-      color: #fff;
-      border: none;
-      font-family: 'Jost', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 0.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .submit-btn:hover { background: var(--accent); }
-    .submit-btn:active { transform: scale(0.99); }
-    .submit-btn.loading { pointer-events: none; }
+.hero-step {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 
-    .attempts-left {
-      text-align: center;
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: 1.5rem;
-      letter-spacing: 0.05em;
-      min-height: 1.2em;
-    }
+.hero-step::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--muted);
+}
 
-    /* Shake animation on error */
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-6px); }
-      40%, 80% { transform: translateX(6px); }
-    }
-    .shake { animation: shake 0.35s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.hero-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(72px, 8vw, 120px);
+  line-height: 0.9;
+  letter-spacing: -2px;
+  margin-bottom: 40px;
+}
 
-    /* ── LOCKED OUT SCREEN ── */
-    #locked-screen {
-      display: none;
-      flex: 1;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-      position: relative;
-      z-index: 1;
-    }
-    #locked-screen.active { display: flex; }
-    .locked-card {
-      text-align: center;
-      max-width: 360px;
-    }
-    .locked-card .big-lock svg {
-      width: 56px;
-      height: 56px;
-      stroke: var(--error);
-      fill: none;
-      stroke-width: 1.2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      margin-bottom: 1.5rem;
-    }
-    .locked-card h2 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.8rem;
-      font-weight: 300;
-      margin-bottom: 0.8rem;
-    }
-    .locked-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
-    .countdown { font-size: 2.2rem; font-weight: 500; color: var(--accent); margin: 1.5rem 0; font-variant-numeric: tabular-nums; }
+.hero-title .line2 {
+  font-weight: 200;
+  font-style: italic;
+}
 
-    /* ── CONTENT SCREEN ── */
-    #content-screen {
-      display: none;
-      flex-direction: column;
-      min-height: 100vh;
-      position: relative;
-      z-index: 1;
-    }
-    #content-screen.active { display: flex; }
+.hero-desc {
+  font-size: 15px;
+  color: rgba(245,243,238,0.6);
+  max-width: 380px;
+  line-height: 1.8;
+  margin-bottom: 48px;
+  font-weight: 300;
+}
 
-    .site-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.5rem 3rem;
-      border-bottom: 1px solid var(--faint);
-      background: #fff;
-    }
-    .site-logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.4rem;
-      font-weight: 400;
-      letter-spacing: 0.1em;
-    }
-    .logout-btn {
-      font-family: 'Jost', sans-serif;
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      background: none;
-      border: 1px solid var(--faint);
-      padding: 0.5rem 1.2rem;
-      cursor: pointer;
-      color: var(--muted);
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .logout-btn:hover { color: var(--ink); border-color: var(--ink); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--white);
+  border: none;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-decoration: none;
+}
 
-    .content-area {
-      flex: 1;
-      max-width: 760px;
-      margin: 4rem auto;
-      padding: 0 2rem;
-      animation: fadeIn 0.5s ease;
-    }
-    .welcome-tag {
-      font-size: 0.72rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 1rem;
-    }
-    .welcome-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 3rem;
-      font-weight: 300;
-      line-height: 1.15;
-      margin-bottom: 1.5rem;
-    }
-    .welcome-text {
-      font-size: 0.95rem;
-      color: var(--muted);
-      line-height: 1.9;
-      max-width: 600px;
-      margin-bottom: 3rem;
-    }
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-    }
-    .info-card {
-      border: 1px solid var(--faint);
-      padding: 1.5rem;
-      background: #fff;
-    }
-    .info-card .card-label {
-      font-size: 0.68rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--accent-light);
-      margin-bottom: 0.6rem;
-    }
-    .info-card .card-value {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.5rem;
-      font-weight: 400;
-    }
-    .info-card p {
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-top: 0.4rem;
-      line-height: 1.6;
-    }
-  </style>
+.btn:hover { opacity: 0.85; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid var(--line);
+}
+
+.btn-outline:hover { border-color: var(--white); }
+
+.hero-right {
+  position: relative;
+  overflow: hidden;
+  background: var(--gray);
+}
+
+/* Ikea-style illustration */
+.hero-illustration {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-illustration svg {
+  width: 80%;
+  max-width: 480px;
+  opacity: 0.9;
+}
+
+/* ─── STATS BAR ─── */
+.stats-bar {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.stat {
+  padding: 36px 40px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat:last-child { border-right: none; }
+
+.stat-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ─── SECTION ─── */
+.section {
+  padding: 100px 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 60px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+}
+
+.section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: clamp(36px, 4vw, 56px);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+/* ─── SERVICES GRID ─── */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+}
+
+.service-card {
+  background: var(--gray);
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.3s;
+}
+
+.service-card:hover { background: var(--gray2); }
+
+.service-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 80px;
+  color: rgba(245,243,238,0.06);
+  line-height: 1;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.service-icon {
+  margin-bottom: 24px;
+}
+
+.service-icon svg {
+  width: 40px;
+  height: 40px;
+  stroke: var(--white);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.service-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.service-desc {
+  font-size: 14px;
+  color: rgba(245,243,238,0.55);
+  line-height: 1.8;
+}
+
+/* ─── REALISATIONS PAGE ─── */
+.real-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+  padding-top: 56px;
+}
+
+.real-card {
+  background: var(--gray);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: transform 0.3s;
+}
+
+.real-card:hover { transform: scale(0.98); }
+
+.real-thumb {
+  position: absolute;
+  inset: 0;
+  background: var(--gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.real-thumb svg {
+  width: 60%;
+  opacity: 0.15;
+}
+
+.real-info {
+  position: relative;
+  z-index: 2;
+  padding: 24px;
+  background: linear-gradient(to top, rgba(10,10,10,0.95) 0%, transparent 100%);
+}
+
+.real-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.real-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+
+/* ─── PROJECT DETAIL ─── */
+.project-layout {
+  padding-top: 56px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  min-height: 100vh;
+}
+
+.project-main {
+  padding: 60px 60px 60px 40px;
+  border-right: 1px solid var(--line);
+}
+
+.project-back {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: color 0.2s;
+}
+
+.project-back:hover { color: var(--white); }
+
+.project-back svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+
+.project-meta-top {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.project-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(48px, 5vw, 80px);
+  line-height: 0.95;
+  letter-spacing: -1px;
+  margin-bottom: 48px;
+}
+
+.project-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin-bottom: 48px;
+}
+
+.project-photo {
+  aspect-ratio: 16/10;
+  background: var(--gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-photo.wide { grid-column: span 2; aspect-ratio: 16/7; }
+
+.project-photo svg {
+  width: 40%;
+  opacity: 0.12;
+}
+
+.photo-label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.project-desc {
+  font-size: 15px;
+  color: rgba(245,243,238,0.65);
+  line-height: 1.9;
+  margin-bottom: 32px;
+}
+
+/* Scene diagram */
+.scene-diagram {
+  background: var(--gray);
+  padding: 40px;
+  margin-bottom: 48px;
+  position: relative;
+}
+
+.scene-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scene-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.scene-diagram svg {
+  width: 100%;
+}
+
+/* Project sidebar */
+.project-sidebar {
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sidebar-section {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sidebar-section:first-child { padding-top: 0; }
+
+.sidebar-key {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.sidebar-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.mvr-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--white);
+  color: var(--black);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  margin-top: 32px;
+  transition: opacity 0.2s;
+}
+
+.mvr-btn:hover { opacity: 0.85; }
+
+.mvr-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--black);
+  fill: none;
+  stroke-width: 2;
+}
+
+/* ─── ABOUT ─── */
+.about-layout {
+  padding-top: 56px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.about-left {
+  padding: 80px 60px 80px 40px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.about-right {
+  padding: 80px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.about-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(56px, 6vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -2px;
+  margin-bottom: 40px;
+}
+
+.about-title em {
+  font-weight: 200;
+  font-style: italic;
+}
+
+.about-body {
+  font-size: 15px;
+  color: rgba(245,243,238,0.65);
+  line-height: 1.9;
+  max-width: 460px;
+  margin-bottom: 48px;
+}
+
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.skill-row {
+  display: flex;
+  align-items: center;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+  gap: 20px;
+}
+
+.skill-row:last-child { border-bottom: 1px solid var(--line); }
+
+.skill-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  min-width: 28px;
+}
+
+.skill-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.skill-bar {
+  width: 120px;
+  height: 2px;
+  background: var(--line);
+  position: relative;
+}
+
+.skill-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--white);
+}
+
+/* ─── CONTACT ─── */
+.contact-layout {
+  padding-top: 56px;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.contact-left {
+  padding: 80px 60px 80px 40px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.contact-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: clamp(56px, 6vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -2px;
+  margin-bottom: 32px;
+}
+
+.contact-sub {
+  font-size: 15px;
+  color: rgba(245,243,238,0.55);
+  margin-bottom: 56px;
+  max-width: 380px;
+  line-height: 1.8;
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+  gap: 20px;
+  text-decoration: none;
+  color: var(--white);
+  transition: opacity 0.2s;
+}
+
+.contact-item:last-child { border-bottom: 1px solid var(--line); }
+.contact-item:hover { opacity: 0.7; }
+
+.contact-item-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  min-width: 80px;
+}
+
+.contact-item-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.contact-right {
+  padding: 80px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.form-input {
+  width: 100%;
+  background: var(--gray);
+  border: 1px solid var(--line);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: rgba(245,243,238,0.4); }
+
+textarea.form-input {
+  resize: none;
+  height: 120px;
+  font-family: 'Barlow', sans-serif;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--line);
+  padding: 28px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-copy {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.footer-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.footer-links a:hover { color: var(--white); }
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page.active .hero-left > * {
+  animation: fadeUp 0.5s ease forwards;
+}
+
+.page.active .hero-left > *:nth-child(1) { animation-delay: 0.05s; }
+.page.active .hero-left > *:nth-child(2) { animation-delay: 0.1s; }
+.page.active .hero-left > *:nth-child(3) { animation-delay: 0.15s; }
+.page.active .hero-left > *:nth-child(4) { animation-delay: 0.2s; }
+
+/* ─── IKEA-STYLE DIVIDER ─── */
+.ikea-divider {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 40px;
+  margin: 0;
+}
+
+.ikea-divider-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--black);
+  background: var(--white);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.ikea-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.ikea-divider-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ─── PROCESS STEPS (Ikea style) ─── */
+.process {
+  padding: 0 40px 100px;
+}
+
+.process-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+  margin-top: 40px;
+}
+
+.process-step {
+  padding: 36px 32px;
+  background: var(--gray);
+  position: relative;
+}
+
+.process-step-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 48px;
+  color: rgba(245,243,238,0.08);
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.process-step-icon {
+  margin-bottom: 20px;
+}
+
+.process-step-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--white);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.process-step-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.process-step-desc {
+  font-size: 13px;
+  color: rgba(245,243,238,0.5);
+  line-height: 1.7;
+}
+
+.arrow-connector {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: var(--black);
+  padding: 4px;
+}
+
+.arrow-connector svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--muted);
+  fill: none;
+  stroke-width: 1.5;
+}
+
+</style>
 </head>
 <body>
 
-  <!-- ── LOGIN ── -->
-  <section id="login-screen">
-    <div class="login-card" id="login-card">
-      <div class="lock-icon">
-        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <span class="gd">GD</span>
+    <span class="studio">Studio</span>
+  </div>
+  <div class="nav-links">
+    <a onclick="showPage('home')" id="nav-home" class="active">Accueil</a>
+    <a onclick="showPage('realisations')" id="nav-realisations">Réalisations</a>
+    <a onclick="showPage('about')" id="nav-about">À propos</a>
+    <a onclick="showPage('contact')" id="nav-contact">Contact</a>
+  </div>
+</nav>
+
+<!-- ══════════════════════ PAGE HOME ══════════════════════ -->
+<div class="page active" id="page-home">
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-step">Création Lumière</div>
+      <h1 class="hero-title">
+        GD<br>
+        <span class="line2">Studio</span>
+      </h1>
+      <p class="hero-desc">Conception et programmation lumière pour le spectacle vivant, l'événementiel et l'installation artistique.</p>
+      <div style="display:flex;gap:12px;">
+        <button class="btn" onclick="showPage('realisations')">Voir les réalisations →</button>
+        <button class="btn btn-outline" onclick="showPage('contact')">Travailler ensemble</button>
       </div>
-      <h1 class="card-title">Accès Restreint</h1>
-      <p class="card-subtitle">Zone privée</p>
+    </div>
+    <div class="hero-right">
+      <div class="hero-illustration">
+        <svg viewBox="0 0 480 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Spot light beams -->
+          <line x1="80" y1="60" x2="240" y2="340" stroke="#f5f3ee" stroke-width="1" opacity="0.15"/>
+          <line x1="240" y1="40" x2="240" y2="340" stroke="#f5f3ee" stroke-width="1" opacity="0.25"/>
+          <line x1="400" y1="60" x2="240" y2="340" stroke="#f5f3ee" stroke-width="1" opacity="0.15"/>
+          <!-- Moving head fixture top-left -->
+          <g transform="translate(60,40)">
+            <rect x="-16" y="-8" width="32" height="16" rx="2" fill="none" stroke="#f5f3ee" stroke-width="1.5"/>
+            <circle cx="0" cy="0" r="6" fill="none" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="-24" y1="-4" x2="-16" y2="-4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="-24" y1="4" x2="-16" y2="4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <rect x="-26" y="-8" width="4" height="16" rx="1" fill="#f5f3ee" opacity="0.3"/>
+          </g>
+          <!-- Moving head center -->
+          <g transform="translate(240,30)">
+            <rect x="-16" y="-8" width="32" height="16" rx="2" fill="none" stroke="#f5f3ee" stroke-width="1.5"/>
+            <circle cx="0" cy="0" r="6" fill="#f5f3ee" opacity="0.8"/>
+            <line x1="-24" y1="-4" x2="-16" y2="-4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="-24" y1="4" x2="-16" y2="4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <rect x="-26" y="-8" width="4" height="16" rx="1" fill="#f5f3ee" opacity="0.4"/>
+          </g>
+          <!-- Moving head right -->
+          <g transform="translate(420,40)">
+            <rect x="-16" y="-8" width="32" height="16" rx="2" fill="none" stroke="#f5f3ee" stroke-width="1.5"/>
+            <circle cx="0" cy="0" r="6" fill="none" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="16" y1="-4" x2="24" y2="-4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="16" y1="4" x2="24" y2="4" stroke="#f5f3ee" stroke-width="1.5"/>
+            <rect x="22" y="-8" width="4" height="16" rx="1" fill="#f5f3ee" opacity="0.3"/>
+          </g>
+          <!-- Truss bar top -->
+          <rect x="30" y="28" width="420" height="6" fill="#f5f3ee" opacity="0.15"/>
+          <line x1="30" y1="28" x2="30" y2="34" stroke="#f5f3ee" stroke-width="2" opacity="0.3"/>
+          <line x1="450" y1="28" x2="450" y2="34" stroke="#f5f3ee" stroke-width="2" opacity="0.3"/>
+          <!-- Stage floor -->
+          <rect x="60" y="340" width="360" height="2" fill="#f5f3ee" opacity="0.3"/>
+          <!-- Person silhouette -->
+          <circle cx="240" cy="308" r="12" fill="none" stroke="#f5f3ee" stroke-width="1.5" opacity="0.5"/>
+          <line x1="240" y1="320" x2="240" y2="350" stroke="#f5f3ee" stroke-width="1.5" opacity="0.5"/>
+          <line x1="220" y1="335" x2="260" y2="335" stroke="#f5f3ee" stroke-width="1.5" opacity="0.5"/>
+          <line x1="240" y1="350" x2="225" y2="370" stroke="#f5f3ee" stroke-width="1.5" opacity="0.5"/>
+          <line x1="240" y1="350" x2="255" y2="370" stroke="#f5f3ee" stroke-width="1.5" opacity="0.5"/>
+          <!-- Measurements / annotations (Ikea style) -->
+          <line x1="60" y1="380" x2="420" y2="380" stroke="#f5f3ee" stroke-width="0.5" opacity="0.3" stroke-dasharray="4 4"/>
+          <text x="240" y="397" fill="#f5f3ee" opacity="0.3" font-size="10" font-family="DM Mono, monospace" text-anchor="middle" letter-spacing="2">12 M</text>
+          <!-- Beam circle on stage -->
+          <ellipse cx="240" cy="342" rx="40" ry="8" fill="#f5f3ee" opacity="0.05"/>
+          <ellipse cx="240" cy="342" rx="40" ry="8" fill="none" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+        </svg>
+      </div>
+      <!-- Corner tag -->
+      <div style="position:absolute;bottom:24px;right:24px;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;">
+        GABIN DELALANDE
+      </div>
+    </div>
+  </div>
 
-      <div class="divider"><span>Authentification</span></div>
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num">48+</div>
+      <div class="stat-label">Productions</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">12</div>
+      <div class="stat-label">Ans d'expérience</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">200+</div>
+      <div class="stat-label">Dates de tournée</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3D</div>
+      <div class="stat-label">Conception MVR</div>
+    </div>
+  </div>
 
-      <div class="field">
-        <label for="password">Mot de passe</label>
-        <div class="input-wrap">
-          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
-          <button class="toggle-btn" id="toggle-vis" aria-label="Afficher le mot de passe" tabindex="-1">
-            <svg id="eye-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
+  <!-- IKEA DIVIDER -->
+  <div style="height:60px;"></div>
+  <div class="ikea-divider">
+    <div class="ikea-divider-num">1</div>
+    <div class="ikea-divider-line"></div>
+    <div class="ikea-divider-text">Expertise</div>
+    <div class="ikea-divider-line"></div>
+  </div>
+  <div style="height:40px;"></div>
+
+  <!-- SERVICES -->
+  <div style="padding: 0 40px 0;">
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-num">01</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="8"/><line x1="20" y1="4" x2="20" y2="10"/><line x1="20" y1="30" x2="20" y2="36"/><line x1="4" y1="20" x2="10" y2="20"/><line x1="30" y1="20" x2="36" y2="20"/><line x1="8" y1="8" x2="12" y2="12"/><line x1="28" y1="28" x2="32" y2="32"/><line x1="32" y1="8" x2="28" y2="12"/><line x1="12" y1="28" x2="8" y2="32"/></svg>
         </div>
-        <p class="error-msg" id="error-msg">Mot de passe incorrect. Veuillez réessayer.</p>
+        <div class="service-name">Conception Lumière</div>
+        <div class="service-desc">Design complet du projet lumineux : analyse dramaturgique, palette chromatique, cahier d'intentions.</div>
       </div>
 
-      <button class="submit-btn" id="submit-btn">Accéder</button>
-      <p class="attempts-left" id="attempts-info"></p>
-    </div>
-  </section>
-
-  <!-- ── LOCKED OUT ── -->
-  <section id="locked-screen">
-    <div class="locked-card">
-      <div class="big-lock">
-        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="12" y1="16" x2="12" y2="18"/></svg>
+      <div class="service-card">
+        <div class="service-num">02</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><rect x="4" y="8" width="32" height="24" rx="2"/><line x1="4" y1="16" x2="36" y2="16"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="20" cy="12" r="2" fill="currentColor"/><circle cx="28" cy="12" r="2" fill="currentColor"/></svg>
+        </div>
+        <div class="service-name">Programmation</div>
+        <div class="service-desc">Programmation sur consoles GrandMA, Eos, Hog. Création de shows complets avec timecode.</div>
       </div>
-      <h2>Accès bloqué</h2>
-      <p>Trop de tentatives incorrectes.<br/>Veuillez patienter avant de réessayer.</p>
-      <div class="countdown" id="countdown">–</div>
-      <p>secondes restantes</p>
-    </div>
-  </section>
 
-  <!-- ── CONTENT ── -->
-  <section id="content-screen">
-    <header class="site-header">
-      <span class="site-logo">Espace Privé</span>
-      <button class="logout-btn" id="logout-btn">Se déconnecter</button>
-    </header>
-    <div class="content-area">
-      <p class="welcome-tag">Bienvenue</p>
-      <h1 class="welcome-title">Vous avez accès<br/>à l'espace privé.</h1>
-      <p class="welcome-text">
-        Ceci est une démonstration d'une page protégée par mot de passe. 
-        Vous pouvez personnaliser ce contenu selon vos besoins — documents confidentiels,
-        tableau de bord privé, espace membre, ou tout autre contenu réservé.
+      <div class="service-card">
+        <div class="service-num">03</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><polygon points="20,4 36,32 4,32"/><line x1="20" y1="14" x2="20" y2="24"/><circle cx="20" cy="28" r="1.5" fill="currentColor"/></svg>
+        </div>
+        <div class="service-name">Modélisation MVR</div>
+        <div class="service-desc">Plans 3D complets en format MVR/GDTF pour une intégration parfaite avec l'équipe de production.</div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-num">04</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><rect x="8" y="8" width="24" height="24" rx="2"/><line x1="14" y1="20" x2="26" y2="20"/><line x1="20" y1="14" x2="20" y2="26"/></svg>
+        </div>
+        <div class="service-name">Régie Tournée</div>
+        <div class="service-desc">Suivi et exploitation en tournée, gestion des adaptations de salle, formation des équipes locales.</div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-num">05</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><path d="M8 32 L20 8 L32 32"/><path d="M12 24 L28 24"/></svg>
+        </div>
+        <div class="service-name">Installation</div>
+        <div class="service-desc">Conception d'installations lumineuses pour l'espace public, musées, galeries et événements.</div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-num">06</div>
+        <div class="service-icon">
+          <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" stroke-dasharray="4 2"/><circle cx="20" cy="20" r="6"/><line x1="20" y1="6" x2="20" y2="14"/></svg>
+        </div>
+        <div class="service-name">Conseil Technique</div>
+        <div class="service-desc">Accompagnement à la constitution des riders, choix des équipements, budgétisation des productions.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PROCESS -->
+  <div style="height:80px;"></div>
+  <div class="ikea-divider">
+    <div class="ikea-divider-num">2</div>
+    <div class="ikea-divider-line"></div>
+    <div class="ikea-divider-text">Méthode de travail</div>
+    <div class="ikea-divider-line"></div>
+  </div>
+  <div style="height:40px;"></div>
+
+  <div class="process">
+    <div class="process-steps">
+      <div class="process-step">
+        <div class="process-step-num">01</div>
+        <div class="process-step-icon">
+          <svg viewBox="0 0 32 32"><path d="M4 8 L16 4 L28 8 L28 20 C28 26 16 30 16 30 C16 30 4 26 4 20 Z"/></svg>
+        </div>
+        <div class="process-step-title">Brief</div>
+        <div class="process-step-desc">Analyse du projet, des espaces, de la dramaturgie et des intentions artistiques.</div>
+        <div class="arrow-connector">
+          <svg viewBox="0 0 20 20"><polyline points="6,4 14,10 6,16"/></svg>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">02</div>
+        <div class="process-step-icon">
+          <svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="2"/><line x1="10" y1="12" x2="22" y2="12"/><line x1="10" y1="16" x2="18" y2="16"/><line x1="10" y1="20" x2="20" y2="20"/></svg>
+        </div>
+        <div class="process-step-title">Conception</div>
+        <div class="process-step-desc">Plans 3D MVR, note d'intention lumière, fiche de parc de matériel.</div>
+        <div class="arrow-connector">
+          <svg viewBox="0 0 20 20"><polyline points="6,4 14,10 6,16"/></svg>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">03</div>
+        <div class="process-step-icon">
+          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><polyline points="12,16 15,19 20,13"/></svg>
+        </div>
+        <div class="process-step-title">Création</div>
+        <div class="process-step-desc">Session de programmation console, préparation et répétitions en salle.</div>
+        <div class="arrow-connector">
+          <svg viewBox="0 0 20 20"><polyline points="6,4 14,10 6,16"/></svg>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">04</div>
+        <div class="process-step-icon">
+          <svg viewBox="0 0 32 32"><polygon points="16,4 4,28 28,28"/><line x1="16" y1="14" x2="16" y2="22"/><circle cx="16" cy="25" r="1.5" fill="currentColor"/></svg>
+        </div>
+        <div class="process-step-title">Exploitation</div>
+        <div class="process-step-desc">Suivi des représentations, adaptations salles, documentation pour la tournée.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-copy">© 2025 GD Studio — Gabin Delalande</div>
+    <div class="footer-links">
+      <a onclick="showPage('realisations')">Réalisations</a>
+      <a onclick="showPage('about')">À propos</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════ PAGE RÉALISATIONS ══════════════════════ -->
+<div class="page" id="page-realisations">
+
+  <div style="padding: 80px 40px 40px; border-bottom: 1px solid var(--line);">
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:16px;">Portfolio</div>
+    <h1 style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(48px,5vw,80px);line-height:0.9;letter-spacing:-2px;">Réalisations</h1>
+  </div>
+
+  <!-- Filter bar -->
+  <div style="padding:16px 40px;border-bottom:1px solid var(--line);display:flex;gap:0;overflow:auto;">
+    <button onclick="filterProjects('all')" class="filter-btn active-filter" id="filter-all" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:transparent;color:var(--white);border:none;border-right:1px solid var(--line);padding:10px 20px;cursor:pointer;">Tout</button>
+    <button onclick="filterProjects('concert')" class="filter-btn" id="filter-concert" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;border-right:1px solid var(--line);padding:10px 20px;cursor:pointer;">Concert</button>
+    <button onclick="filterProjects('theatre')" class="filter-btn" id="filter-theatre" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;border-right:1px solid var(--line);padding:10px 20px;cursor:pointer;">Théâtre</button>
+    <button onclick="filterProjects('event')" class="filter-btn" id="filter-event" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;border-right:1px solid var(--line);padding:10px 20px;cursor:pointer;">Événementiel</button>
+    <button onclick="filterProjects('install')" class="filter-btn" id="filter-install" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;background:transparent;color:var(--muted);border:none;padding:10px 20px;cursor:pointer;">Installation</button>
+  </div>
+
+  <div class="real-grid" id="realisations-grid">
+
+    <!-- Project cards -->
+    <div class="real-card" data-cat="concert" onclick="showProject('nova')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="60" y1="20" x2="100" y2="140" stroke="#f5f3ee" stroke-width="0.8"/>
+          <line x1="100" y1="10" x2="100" y2="140" stroke="#f5f3ee" stroke-width="1.2"/>
+          <line x1="140" y1="20" x2="100" y2="140" stroke="#f5f3ee" stroke-width="0.8"/>
+          <circle cx="100" cy="140" r="20" fill="#f5f3ee" opacity="0.05"/>
+          <circle cx="100" cy="140" r="20" stroke="#f5f3ee" stroke-width="0.5"/>
+          <rect x="40" y="12" width="120" height="5" fill="#f5f3ee" opacity="0.15"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Concert · 2024</div>
+        <div class="real-name">Nova — Tournée nationale</div>
+      </div>
+    </div>
+
+    <div class="real-card" data-cat="theatre" onclick="showProject('electra')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="130" width="140" height="3" fill="#f5f3ee" opacity="0.2"/>
+          <line x1="50" y1="20" x2="50" y2="130" stroke="#f5f3ee" stroke-width="0.5" opacity="0.4"/>
+          <line x1="150" y1="20" x2="150" y2="130" stroke="#f5f3ee" stroke-width="0.5" opacity="0.4"/>
+          <line x1="80" y1="15" x2="60" y2="130" stroke="#f5f3ee" stroke-width="1" opacity="0.6"/>
+          <line x1="120" y1="15" x2="140" y2="130" stroke="#f5f3ee" stroke-width="1" opacity="0.6"/>
+          <rect x="70" y="90" width="60" height="40" fill="#f5f3ee" opacity="0.05"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Théâtre · 2024</div>
+        <div class="real-name">Électra — TNB Rennes</div>
+      </div>
+    </div>
+
+    <div class="real-card" data-cat="event" onclick="showProject('nuit-blanche')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="80" r="50" fill="#f5f3ee" opacity="0.03"/>
+          <circle cx="100" cy="80" r="50" stroke="#f5f3ee" stroke-width="0.5"/>
+          <circle cx="100" cy="80" r="30" fill="#f5f3ee" opacity="0.04"/>
+          <circle cx="100" cy="80" r="30" stroke="#f5f3ee" stroke-width="0.5"/>
+          <circle cx="100" cy="80" r="10" fill="#f5f3ee" opacity="0.15"/>
+          <line x1="100" y1="20" x2="100" y2="30" stroke="#f5f3ee" stroke-width="1"/>
+          <line x1="100" y1="130" x2="100" y2="140" stroke="#f5f3ee" stroke-width="1"/>
+          <line x1="40" y1="80" x2="50" y2="80" stroke="#f5f3ee" stroke-width="1"/>
+          <line x1="150" y1="80" x2="160" y2="80" stroke="#f5f3ee" stroke-width="1"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Installation · 2023</div>
+        <div class="real-name">Nuit Blanche — Paris</div>
+      </div>
+    </div>
+
+    <div class="real-card" data-cat="concert" onclick="showProject('resonance')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 80 Q60 40 100 80 Q140 120 180 80" stroke="#f5f3ee" stroke-width="0.8" opacity="0.3"/>
+          <path d="M20 80 Q60 60 100 80 Q140 100 180 80" stroke="#f5f3ee" stroke-width="0.8" opacity="0.5"/>
+          <path d="M20 80 Q60 70 100 80 Q140 90 180 80" stroke="#f5f3ee" stroke-width="1" opacity="0.8"/>
+          <rect x="30" y="130" width="140" height="2" fill="#f5f3ee" opacity="0.2"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Concert · 2023</div>
+        <div class="real-name">Résonance — Festival</div>
+      </div>
+    </div>
+
+    <div class="real-card" data-cat="theatre" onclick="showProject('macbeth')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="40" y="30" width="120" height="80" fill="none" stroke="#f5f3ee" stroke-width="0.5" opacity="0.3"/>
+          <line x1="40" y1="110" x2="100" y2="60" stroke="#f5f3ee" stroke-width="1" opacity="0.5"/>
+          <line x1="160" y1="110" x2="100" y2="60" stroke="#f5f3ee" stroke-width="1" opacity="0.5"/>
+          <rect x="30" y="125" width="140" height="3" fill="#f5f3ee" opacity="0.2"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Théâtre · 2022</div>
+        <div class="real-name">Macbeth — Avignon</div>
+      </div>
+    </div>
+
+    <div class="real-card" data-cat="install" onclick="showProject('lumiere-architecture')">
+      <div class="real-thumb">
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="40" width="160" height="90" fill="none" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+          <rect x="40" y="40" width="2" height="90" fill="#f5f3ee" opacity="0.1"/>
+          <rect x="80" y="40" width="2" height="90" fill="#f5f3ee" opacity="0.1"/>
+          <rect x="120" y="40" width="2" height="90" fill="#f5f3ee" opacity="0.1"/>
+          <rect x="160" y="40" width="2" height="90" fill="#f5f3ee" opacity="0.1"/>
+          <line x1="20" y1="80" x2="180" y2="80" stroke="#f5f3ee" stroke-width="0.5" opacity="0.15"/>
+          <circle cx="41" cy="40" r="3" fill="#f5f3ee" opacity="0.4"/>
+          <circle cx="81" cy="40" r="3" fill="#f5f3ee" opacity="0.4"/>
+          <circle cx="121" cy="40" r="3" fill="#f5f3ee" opacity="0.4"/>
+          <circle cx="161" cy="40" r="3" fill="#f5f3ee" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="real-info">
+        <div class="real-tag">Installation · 2022</div>
+        <div class="real-name">Lumière Architecture</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-copy">© 2025 GD Studio — Gabin Delalande</div>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Accueil</a>
+      <a onclick="showPage('about')">À propos</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ══════════════════════ PAGE PROJET DÉTAIL ══════════════════════ -->
+<div class="page" id="page-project">
+
+  <div class="project-layout">
+    <div class="project-main">
+      <div class="project-back" onclick="showPage('realisations')">
+        <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+        Retour aux réalisations
+      </div>
+
+      <div class="project-meta-top" id="proj-meta">Concert · 2024</div>
+      <h1 class="project-title" id="proj-title">Nova — Tournée Nationale</h1>
+
+      <!-- Photo grid -->
+      <div class="project-photos">
+        <div class="project-photo wide">
+          <svg viewBox="0 0 640 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:50%;opacity:0.1;">
+            <line x1="160" y1="20" x2="320" y2="180" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="320" y1="10" x2="320" y2="180" stroke="#f5f3ee" stroke-width="2"/>
+            <line x1="480" y1="20" x2="320" y2="180" stroke="#f5f3ee" stroke-width="1.5"/>
+            <rect x="80" y="10" width="480" height="8" fill="#f5f3ee"/>
+          </svg>
+          <div class="photo-label">Vue générale scène · Photo: G. Delalande</div>
+        </div>
+        <div class="project-photo">
+          <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:50%;opacity:0.1;">
+            <circle cx="100" cy="80" r="40" stroke="#f5f3ee" stroke-width="1.5"/>
+            <circle cx="100" cy="80" r="20" fill="#f5f3ee" opacity="0.3"/>
+          </svg>
+          <div class="photo-label">Détail découpe</div>
+        </div>
+        <div class="project-photo">
+          <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:50%;opacity:0.1;">
+            <rect x="40" y="30" width="120" height="80" stroke="#f5f3ee" stroke-width="1.5"/>
+            <line x1="40" y1="110" x2="160" y2="110" stroke="#f5f3ee" stroke-width="1.5"/>
+          </svg>
+          <div class="photo-label">Console · GrandMA3</div>
+        </div>
+      </div>
+
+      <p class="project-desc" id="proj-desc">
+        Conception lumière complète pour la tournée nationale de Nova, artiste pop électronique. Scénographie lumineuse autour d'un rig de moving heads et de leds strip, avec un show timecode synchronisé sur la musique. 42 dates dans toute la France, de la salle de 500 à la grande salle de 3000 places.
       </p>
-      <div class="cards-grid">
-        <div class="info-card">
-          <p class="card-label">Statut</p>
-          <p class="card-value">Connecté</p>
-          <p>Session active et sécurisée.</p>
-        </div>
-        <div class="info-card">
-          <p class="card-label">Mot de passe de démo</p>
-          <p class="card-value">secret123</p>
-          <p>Modifiez-le dans le code JS.</p>
-        </div>
-        <div class="info-card">
-          <p class="card-label">Protection</p>
-          <p class="card-value">3 essais</p>
-          <p>Blocage de 30 s après échecs.</p>
+
+      <!-- Scene diagram -->
+      <div class="scene-diagram">
+        <div class="scene-label">Plan de scène 3D / MVR</div>
+        <svg id="proj-scene" viewBox="0 0 600 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Stage floor perspective -->
+          <path d="M60 240 L540 240 L480 120 L120 120 Z" fill="rgba(245,243,238,0.03)" stroke="#f5f3ee" stroke-width="0.5" opacity="0.3"/>
+          <!-- Grid lines on floor -->
+          <line x1="175" y1="120" x2="145" y2="240" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="240" y1="120" x2="220" y2="240" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="300" y1="120" x2="300" y2="240" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="360" y1="120" x2="380" y2="240" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="425" y1="120" x2="455" y2="240" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <!-- Horizontal grid -->
+          <line x1="124" y1="150" x2="476" y2="150" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="130" y1="180" x2="470" y2="180" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <line x1="135" y1="210" x2="465" y2="210" stroke="#f5f3ee" stroke-width="0.3" opacity="0.2"/>
+          <!-- Truss top bar -->
+          <rect x="100" y="60" width="400" height="8" fill="#f5f3ee" opacity="0.12"/>
+          <line x1="100" y1="60" x2="120" y2="120" stroke="#f5f3ee" stroke-width="0.5" opacity="0.3"/>
+          <line x1="500" y1="60" x2="480" y2="120" stroke="#f5f3ee" stroke-width="0.5" opacity="0.3"/>
+          <!-- Moving heads -->
+          <g opacity="0.8">
+            <circle cx="145" cy="64" r="5" fill="none" stroke="#f5f3ee" stroke-width="1.2"/>
+            <line x1="145" y1="64" x2="190" y2="180" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+          </g>
+          <g opacity="0.8">
+            <circle cx="210" cy="64" r="5" fill="none" stroke="#f5f3ee" stroke-width="1.2"/>
+            <line x1="210" y1="64" x2="250" y2="180" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+          </g>
+          <g opacity="0.8">
+            <circle cx="300" cy="64" r="5" fill="#f5f3ee" opacity="0.6" stroke="#f5f3ee" stroke-width="1.2"/>
+            <line x1="300" y1="64" x2="300" y2="190" stroke="#f5f3ee" stroke-width="0.8" opacity="0.3"/>
+          </g>
+          <g opacity="0.8">
+            <circle cx="390" cy="64" r="5" fill="none" stroke="#f5f3ee" stroke-width="1.2"/>
+            <line x1="390" y1="64" x2="350" y2="180" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+          </g>
+          <g opacity="0.8">
+            <circle cx="455" cy="64" r="5" fill="none" stroke="#f5f3ee" stroke-width="1.2"/>
+            <line x1="455" y1="64" x2="410" y2="180" stroke="#f5f3ee" stroke-width="0.5" opacity="0.2"/>
+          </g>
+          <!-- Artist position -->
+          <circle cx="300" cy="195" r="8" fill="none" stroke="#f5f3ee" stroke-width="1"/>
+          <line x1="300" y1="203" x2="300" y2="220" stroke="#f5f3ee" stroke-width="1"/>
+          <line x1="289" y1="213" x2="311" y2="213" stroke="#f5f3ee" stroke-width="1"/>
+          <!-- Annotations -->
+          <text x="300" y="255" fill="#f5f3ee" opacity="0.3" font-size="9" font-family="DM Mono, monospace" text-anchor="middle" letter-spacing="2">SCÈNE 14M × 10M</text>
+          <text x="100" y="255" fill="#f5f3ee" opacity="0.2" font-size="8" font-family="DM Mono, monospace" letter-spacing="1">COUR</text>
+          <text x="460" y="255" fill="#f5f3ee" opacity="0.2" font-size="8" font-family="DM Mono, monospace" letter-spacing="1">JARDIN</text>
+          <!-- Legend -->
+          <circle cx="30" cy="30" r="4" fill="none" stroke="#f5f3ee" stroke-width="1"/>
+          <text x="42" y="34" fill="#f5f3ee" opacity="0.4" font-size="8" font-family="DM Mono, monospace">Moving head</text>
+          <circle cx="30" cy="50" r="4" fill="#f5f3ee" opacity="0.5"/>
+          <text x="42" y="54" fill="#f5f3ee" opacity="0.4" font-size="8" font-family="DM Mono, monospace">Spot actif</text>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="project-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-key">Client</div>
+        <div class="sidebar-val" id="proj-client">Nova / Label XL Music</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-key">Type</div>
+        <div class="sidebar-val" id="proj-type">Tournée nationale</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-key">Année</div>
+        <div class="sidebar-val" id="proj-year">2024</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-key">Dates</div>
+        <div class="sidebar-val" id="proj-dates">42 représentations</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-key">Console</div>
+        <div class="sidebar-val" id="proj-console">GrandMA3 Full Size</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-key">Rôle</div>
+        <div class="sidebar-val" id="proj-role">Concepteur & Programmateur</div>
+      </div>
+
+      <button class="mvr-btn">
+        <svg viewBox="0 0 18 18"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Télécharger fichier MVR
+      </button>
+
+      <div style="margin-top:32px;padding-top:32px;border-top:1px solid var(--line);">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:16px;">Équipements principaux</div>
+        <div id="proj-equip" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:13px;color:rgba(245,243,238,0.6);font-weight:300;padding:8px 0;border-bottom:1px solid var(--line);">12× Clay Paky A-Leda B-EYE K20</div>
+          <div style="font-size:13px;color:rgba(245,243,238,0.6);font-weight:300;padding:8px 0;border-bottom:1px solid var(--line);">8× Robe Forte</div>
+          <div style="font-size:13px;color:rgba(245,243,238,0.6);font-weight:300;padding:8px 0;border-bottom:1px solid var(--line);">6× Martin MAC Quantum Wash</div>
+          <div style="font-size:13px;color:rgba(245,243,238,0.6);font-weight:300;padding:8px 0;">24m LED strip 60W/m</div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <script>
-    /* ── CONFIG ── */
-    const CORRECT_PASSWORD = 'secret123';
-    const MAX_ATTEMPTS     = 3;
-    const LOCKOUT_SECS     = 30;
+  <footer>
+    <div class="footer-copy">© 2025 GD Studio — Gabin Delalande</div>
+    <div class="footer-links">
+      <a onclick="showPage('realisations')">Réalisations</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
 
-    /* ── STATE ── */
-    let attempts = 0;
-    let locked   = false;
-    let lockTimer = null;
+<!-- ══════════════════════ PAGE ABOUT ══════════════════════ -->
+<div class="page" id="page-about">
 
-    /* ── ELEMENTS ── */
-    const loginScreen   = document.getElementById('login-screen');
-    const lockedScreen  = document.getElementById('locked-screen');
-    const contentScreen = document.getElementById('content-screen');
-    const passwordInput = document.getElementById('password');
-    const submitBtn     = document.getElementById('submit-btn');
-    const errorMsg      = document.getElementById('error-msg');
-    const attemptsInfo  = document.getElementById('attempts-info');
-    const countdownEl   = document.getElementById('countdown');
-    const toggleVis     = document.getElementById('toggle-vis');
-    const eyeIcon       = document.getElementById('eye-icon');
-    const logoutBtn     = document.getElementById('logout-btn');
-    const loginCard     = document.getElementById('login-card');
+  <div class="about-layout">
+    <div class="about-left">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:32px;display:flex;align-items:center;gap:16px;">
+        <span style="width:32px;height:1px;background:var(--muted);display:block;"></span>
+        Gabin Delalande
+      </div>
+      <h1 class="about-title">
+        Designer<br>
+        <em>Lumière</em>
+      </h1>
+      <p class="about-body">
+        Concepteur lumière basé à Paris, je travaille à l'interface du spectacle vivant, de la musique amplifiée et des arts visuels. Depuis plus de 10 ans, je collabore avec des compagnies de théâtre, des artistes de concerts et des institutions culturelles pour créer des univers lumineux cohérents avec la dramaturgie et les intentions artistiques.
+      </p>
+      <p class="about-body" style="margin-bottom:0;">
+        Formé à l'ISTS d'Avignon, j'utilise des outils comme Vectorworks, Vision, et la suite GrandMA pour concevoir des shows du brief jusqu'à l'exploitation.
+      </p>
+    </div>
 
-    /* ── TOGGLE PASSWORD VISIBILITY ── */
-    toggleVis.addEventListener('click', () => {
-      const isText = passwordInput.type === 'text';
-      passwordInput.type = isText ? 'password' : 'text';
-      eyeIcon.innerHTML = isText
-        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    });
+    <div class="about-right">
+      <!-- Portrait placeholder -->
+      <div style="background:var(--gray);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;margin-bottom:2px;">
+        <svg viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:60%;opacity:0.12;">
+          <circle cx="100" cy="55" r="25"/>
+          <path d="M50 130 Q100 90 150 130"/>
+        </svg>
+      </div>
+      <div style="background:var(--gray);padding:24px;margin-bottom:40px;">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Formation</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:16px;letter-spacing:0.02em;">ISTS Avignon · Licence Pro Régie Lumière</div>
+      </div>
 
-    /* ── LOGIN LOGIC ── */
-    function attempt() {
-      if (locked) return;
-      const val = passwordInput.value;
-      if (!val) return;
+      <!-- Skills -->
+      <div class="skills-list">
+        <div class="skill-row">
+          <div class="skill-num">01</div>
+          <div class="skill-name">GrandMA3</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-num">02</div>
+          <div class="skill-name">ETC Eos</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:80%"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-num">03</div>
+          <div class="skill-name">Vectorworks</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:90%"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-num">04</div>
+          <div class="skill-name">Vision / MVR</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:85%"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-num">05</div>
+          <div class="skill-name">Capture / GDTF</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:75%"></div></div>
+        </div>
+        <div class="skill-row">
+          <div class="skill-num">06</div>
+          <div class="skill-name">Timecode / SMPTE</div>
+          <div class="skill-bar"><div class="skill-bar-fill" style="width:88%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      if (val === CORRECT_PASSWORD) {
-        loginScreen.style.display = 'none';
-        contentScreen.classList.add('active');
-      } else {
-        attempts++;
-        passwordInput.value = '';
-        passwordInput.classList.add('error-state');
-        errorMsg.classList.add('visible');
-        loginCard.classList.remove('shake');
-        void loginCard.offsetWidth;
-        loginCard.classList.add('shake');
+  <footer>
+    <div class="footer-copy">© 2025 GD Studio — Gabin Delalande</div>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Accueil</a>
+      <a onclick="showPage('realisations')">Réalisations</a>
+      <a onclick="showPage('contact')">Contact</a>
+    </div>
+  </footer>
+</div>
 
-        const remaining = MAX_ATTEMPTS - attempts;
-        if (remaining > 0) {
-          attemptsInfo.textContent = `Il vous reste ${remaining} tentative${remaining > 1 ? 's' : ''}.`;
-        }
+<!-- ══════════════════════ PAGE CONTACT ══════════════════════ -->
+<div class="page" id="page-contact">
 
-        if (attempts >= MAX_ATTEMPTS) {
-          lockout();
-        }
+  <div class="contact-layout">
+    <div class="contact-left">
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:32px;">Travaillons ensemble</div>
+      <h1 class="contact-title">Parlons<br><span style="font-weight:200;font-style:italic;">lumière</span></h1>
+      <p class="contact-sub">Pour une nouvelle production, une tournée, une installation ou simplement échanger sur un projet — n'hésitez pas à prendre contact.</p>
 
-        setTimeout(() => {
-          passwordInput.classList.remove('error-state');
-          errorMsg.classList.remove('visible');
-        }, 2500);
-      }
+      <div class="contact-list">
+        <a class="contact-item" href="mailto:gabin@gdstudio.fr">
+          <div class="contact-item-label">Email</div>
+          <div class="contact-item-val">gabin@gdstudio.fr</div>
+        </a>
+        <a class="contact-item" href="tel:+33600000000">
+          <div class="contact-item-label">Téléphone</div>
+          <div class="contact-item-val">+33 6 00 00 00 00</div>
+        </a>
+        <div class="contact-item" style="cursor:default;">
+          <div class="contact-item-label">Basé à</div>
+          <div class="contact-item-val">Paris, France</div>
+        </div>
+        <div class="contact-item" style="cursor:default;">
+          <div class="contact-item-label">Disponibilité</div>
+          <div class="contact-item-val">Sur demande 2025–2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-right">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:32px;display:flex;align-items:center;gap:16px;">
+        <div style="width:24px;height:24px;background:var(--white);color:var(--black);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;">3</div>
+        Message
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nom</label>
+        <input type="text" class="form-input" placeholder="Votre nom">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" placeholder="votre@email.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type de projet</label>
+        <input type="text" class="form-input" placeholder="Concert, théâtre, installation…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-input" placeholder="Décrivez votre projet…"></textarea>
+      </div>
+      <button class="btn" style="width:100%;justify-content:center;">Envoyer le message →</button>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-copy">© 2025 GD Studio — Gabin Delalande</div>
+    <div class="footer-links">
+      <a onclick="showPage('home')">Accueil</a>
+      <a onclick="showPage('realisations')">Réalisations</a>
+      <a onclick="showPage('about')">À propos</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+const projectData = {
+  nova: {
+    meta: 'Concert · 2024',
+    title: 'Nova\nTournée Nationale',
+    desc: 'Conception lumière complète pour la tournée nationale de Nova, artiste pop électronique. Scénographie lumineuse autour d\'un rig de moving heads et de leds strip, avec un show timecode synchronisé sur la musique. 42 dates dans toute la France, de la salle de 500 à la grande salle de 3000 places.',
+    client: 'Nova / Label XL Music',
+    type: 'Tournée nationale',
+    year: '2024',
+    dates: '42 représentations',
+    console: 'GrandMA3 Full Size',
+    role: 'Concepteur & Programmateur',
+    equip: ['12× Clay Paky A-Leda B-EYE K20','8× Robe Forte','6× Martin MAC Quantum Wash','24m LED strip 60W/m']
+  },
+  electra: {
+    meta: 'Théâtre · 2024',
+    title: 'Électra\nTNB Rennes',
+    desc: 'Création lumière pour la mise en scène d\'Électra au Théâtre National de Bretagne. Un travail sur les ombres portées et les lumières rasantes pour souligner la tragédie grecque. Utilisation de découpes et de fresnel dans un dispositif scénique épuré.',
+    client: 'Théâtre National de Bretagne',
+    type: 'Théâtre',
+    year: '2024',
+    dates: '18 représentations',
+    console: 'ETC Eos Ti',
+    role: 'Concepteur Lumière',
+    equip: ['24× ETC Source 4 750W','12× Fresnel Strand 2kW','8× Par LED 5CH','4× Cyclorama 500W']
+  },
+  'nuit-blanche': {
+    meta: 'Installation · 2023',
+    title: 'Nuit Blanche\nParis',
+    desc: 'Installation lumineuse pour la Nuit Blanche de Paris 2023 dans le 13e arrondissement. Une proposition autour de la lumière diffuse et des halos projetés sur les façades Haussmanniennes, créant un dialogue entre l\'architecture et la lumière artificielle.',
+    client: 'Mairie de Paris / Paris 13',
+    type: 'Installation urbaine',
+    year: '2023',
+    dates: '1 nuit',
+    console: 'GrandMA2 onPC',
+    role: 'Concepteur & Réalisateur',
+    equip: ['6× Wash LED 7×60W','4× Projecteur PANI 4kW','DMX autonome Pharos']
+  },
+  resonance: {
+    meta: 'Concert · 2023',
+    title: 'Résonance\nFestival',
+    desc: 'Direction technique lumière pour le festival Résonance, regroupant 12 artistes sur 3 jours. Conception d\'un rig modulaire adapté à tous les styles musicaux et mis en œuvre sur une scène extérieure de grande capacité.',
+    client: 'Festival Résonance',
+    type: 'Festival / Plein air',
+    year: '2023',
+    dates: '3 jours · 18 concerts',
+    console: 'GrandMA3 Light',
+    role: 'Chef Éclairagiste',
+    equip: ['20× Moving Head Wash','16× Moving Head Beam','8× Strobe 3000W','Truss 20m × 2 niveaux']
+  },
+  macbeth: {
+    meta: 'Théâtre · 2022',
+    title: 'Macbeth\nAvignon',
+    desc: 'Lumières pour Macbeth présenté au Festival d\'Avignon dans la Cour des Ursulines. Un dispositif utilisant des flammes réelles et des sources basse tension pour créer une atmosphère médiévale sombre et inquiétante.',
+    client: 'Cie des Ombres / Festival Avignon',
+    type: 'Théâtre de plein air',
+    year: '2022',
+    dates: '10 représentations',
+    console: 'Hog4',
+    role: 'Concepteur Lumière',
+    equip: ['Bougie & flammes','12× PAR 64 1kW','8× Fresnel 2kW','6× Découpe 1kW']
+  },
+  'lumiere-architecture': {
+    meta: 'Installation · 2022',
+    title: 'Lumière\nArchitecture',
+    desc: 'Mise en lumière architecturale permanente d\'un édifice patrimonial classé. Étude colorimétrique et mise en valeur des volumes par un travail de lumière rasante et de projection structurée, avec système de gestion centralisé DALI.',
+    client: 'DRAC Île-de-France',
+    type: 'Éclairage architectural',
+    year: '2022',
+    dates: 'Installation permanente',
+    console: 'Pharos LPC X',
+    role: 'Ingénieur Lumière',
+    equip: ['LED extérieure IP66','Projecteurs RGBW 60W','DALI dimmer 16ch','Contrôleur Pharos']
+  }
+};
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+
+  const page = document.getElementById('page-' + name);
+  if (page) {
+    page.classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  if (name === 'realisations' || name === 'project') {
+    document.getElementById('nav-realisations').classList.add('active');
+  }
+}
+
+function showProject(id) {
+  const d = projectData[id];
+  if (!d) return;
+
+  const lines = d.title.split('\n');
+  document.getElementById('proj-meta').textContent = d.meta;
+  document.getElementById('proj-title').innerHTML = lines[0] + (lines[1] ? '<br><span style="font-weight:200;font-style:italic;">' + lines[1] + '</span>' : '');
+  document.getElementById('proj-desc').textContent = d.desc;
+  document.getElementById('proj-client').textContent = d.client;
+  document.getElementById('proj-type').textContent = d.type;
+  document.getElementById('proj-year').textContent = d.year;
+  document.getElementById('proj-dates').textContent = d.dates;
+  document.getElementById('proj-console').textContent = d.console;
+  document.getElementById('proj-role').textContent = d.role;
+
+  const equipDiv = document.getElementById('proj-equip');
+  equipDiv.innerHTML = d.equip.map(e =>
+    `<div style="font-size:13px;color:rgba(245,243,238,0.6);font-weight:300;padding:8px 0;border-bottom:1px solid var(--line);">${e}</div>`
+  ).join('');
+
+  showPage('project');
+}
+
+function filterProjects(cat) {
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.style.color = 'var(--muted)';
+  });
+  document.getElementById('filter-' + cat).style.color = 'var(--white)';
+
+  document.querySelectorAll('.real-card').forEach(card => {
+    if (cat === 'all' || card.dataset.cat === cat) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
     }
-
-    function lockout() {
-      locked = true;
-      loginScreen.style.display = 'none';
-      lockedScreen.classList.add('active');
-
-      let secs = LOCKOUT_SECS;
-      countdownEl.textContent = secs;
-      lockTimer = setInterval(() => {
-        secs--;
-        countdownEl.textContent = secs;
-        if (secs <= 0) {
-          clearInterval(lockTimer);
-          locked = false;
-          attempts = 0;
-          lockedScreen.classList.remove('active');
-          loginScreen.style.display = 'flex';
-          attemptsInfo.textContent = '';
-          passwordInput.value = '';
-        }
-      }, 1000);
-    }
-
-    /* ── LOGOUT ── */
-    logoutBtn.addEventListener('click', () => {
-      contentScreen.classList.remove('active');
-      loginScreen.style.display = 'flex';
-      passwordInput.value = '';
-      attempts = 0;
-      attemptsInfo.textContent = '';
-    });
-
-    submitBtn.addEventListener('click', attempt);
-    passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') attempt(); });
-  </script>
+  });
+}
+</script>
 </body>
 </html>
